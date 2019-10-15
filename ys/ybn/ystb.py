@@ -11,7 +11,7 @@ Argument = namedtuple("Argument", "idx type res_len res_off")
 Command = namedtuple("Command", "code args line")
 
 read_header = make_reader(YstbHeader, "II4xII8x")
-read_cmd_meta = make_reader(CommandMeta, "BBxx")
+read_cmd_meta = make_reader(CommandMeta, "BBxx")  # xx = always zero
 read_arg = make_reader(Argument, "HHII")
 
 
@@ -47,14 +47,10 @@ class Ystb:
 
         for _ in range(count):
             meta = read_cmd_meta(cmd_reader)
-
-            args = []
-            for _ in range(meta.arg_count):
-                args.append(read_arg(arg_reader))
-
+            args = tuple(read_arg(arg_reader) for _ in range(meta.arg_count))
             line = int.from_bytes(srcmap_reader.read(4), byteorder="little")
 
-            cmd = Command(meta.code, tuple(args), line)
+            cmd = Command(meta.code, args, line)
             code.append(cmd)
 
         return cls(code, res_section)
